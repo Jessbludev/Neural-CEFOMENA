@@ -22,3 +22,11 @@ este repositorio. Respondemos en un plazo de 7 días.
   (`gh attestation verify <archivo> -R Jessbludev/Neural-CEFOMENA`).
 - **Agente**: backend `dryrun` por defecto; acciones reales con allowlist, límite de pasos,
   confirmación humana para acciones peligrosas y log de auditoría.
+
+## Ruleset de `main`
+
+[`.github/rulesets/main.json`](.github/rulesets/main.json): PR obligatorio, checks requeridos
+(`lint-type-test`, `pip-audit`, `gitleaks`, `codeql`, `dependency-review`), historial lineal, sin
+force-push ni borrado. Importar en **Settings → Rules → Rulesets → New ruleset → Import a ruleset**.
+Aprobaciones requeridas = 0 porque el repo tiene un solo mantenedor (GitHub no permite aprobar el
+propio PR); súbelo a 1 cuando haya más revisores.

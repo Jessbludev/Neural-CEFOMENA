@@ -1,0 +1,42 @@
+name: CI
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: ci-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  test:
+    name: lint-type-test
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    steps:
+      - uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262 # v4
+        with:
+          persist-credentials: false
+      - uses: astral-sh/setup-uv@d0cc045d04ccac9d8b7881df0226f9e82c39688e # v6
+        with:
+          enable-cache: true
+      - run: uv python install 3.11
+      - run: uv sync --locked
+      - run: uv run ruff format --check src tests
+      - run: uv run ruff check src tests
+      - run: uv run mypy
+      - run: uv run pytest --cov=cefomena --cov-report=term --cov-report=xml
+      - name: CLI smoke (synth → tokenizer → train → export → checksums)
+        run: |
+          set -euo pipefail
+          D=$(mktemp -d)
+          uv run cefomena synth --n 300 --out $D/s.jsonl
+          uv run cefomena train-tokenizer --data $D/s.jsonl --vocab-size 400 --out $D/tok.json
+          uv run cefomena prepare --data $D/s.jsonl --tokenizer $D/tok.json --out $D/d.npz
+          uv run cefomena train --data $D/d.npz --tokenizer $D/tok.json --preset test \
+            --steps 30 --batch-size 8 --context 64 --device cpu --active-steps 20 --out $D/model
+          (cd $D/model && sha256sum -c SHA256SUMS)
